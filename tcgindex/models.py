@@ -18,6 +18,7 @@ class Catalog(TimestampModel, table=True):
     ...
 
 class Game(TimestampModel, table=True):
+    name: str
     ...
 
 class Expansion(TimestampModel, table=True):
