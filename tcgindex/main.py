@@ -1,15 +1,6 @@
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from sqlmodel import create_engine, Session, SQLModel
-
-from tcgindex.models import (
-    Game,
-    Catalog,
-    ProtoSet,
-    SetRepresentation,
-    ProtoCard,
-    CardRepresentation,
-)
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"

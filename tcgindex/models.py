@@ -1,10 +1,8 @@
 import datetime
 from typing import Any
-from uuid import UUID
+
 from sqlalchemy import DateTime, func, text
-from sqlmodel import Column, Field, SQLModel, Relationship
-class GameBase(SQLModel):
-    name: str
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 class TimestampModel(SQLModel):
@@ -23,52 +21,144 @@ class PublicModel(TimestampModel):
     id: int
 
 
-class Catalog(TimestampModel, table=True):
+# CATALOG
+class CatalogBase(SQLModel):
     name: str = Field(unique=True)
+
+
+class Catalog(CatalogBase, TimestampModel, table=True):
     set_representations: list["SetRepresentation"] = Relationship(
         back_populates="catalog"
     )
 
 
-class Game(TimestampModel, GameBase, table=True):
+class CatalogPublic(CatalogBase, PublicModel):
+    pass
+
+
+class CatalogCreate(CatalogBase):
+    pass
+
+
+class CatalogUpdate(CatalogBase):
+    name: str | None = None
+
+
+# GAME
+class GameBase(SQLModel):
+    name: str
+
+
+class Game(GameBase, TimestampModel, table=True):
     proto_sets: list["ProtoSet"] = Relationship(back_populates="game")
     proto_cards: list["ProtoCard"] = Relationship(back_populates="game")
-class ProtoSet(TimestampModel, table=True):
+
+
+class GamePublic(PublicModel, GameBase):
+    pass
+
+
+class GameCreate(GameBase):
+    pass
+
+
+class GameUpdate(GameBase):
+    name: str | None = None
+
+
+# PROTO SET
+class ProtoSetBase(SQLModel):
     game_id: int = Field(foreign_key="game.id")
+    name: str
+
+
+class ProtoSet(ProtoSetBase, TimestampModel, table=True):
     game: Game = Relationship(back_populates="proto_sets")
     set_representations: list["SetRepresentation"] = Relationship(
         back_populates="proto_set"
     )
 
 
-class SetRepresentation(TimestampModel, table=True):
+class ProtoSetCreate(ProtoSetBase):
+    pass
+
+
+class ProtoSetPublic(ProtoSetBase, PublicModel):
+    pass
+
+
+class ProtoSetUpdate(ProtoSetBase):
+    game_id: int | None = None
+    name: str | None = None
+
+
+# SET REPRESENTATION
+class SetRepresentationBase(SQLModel):
     proto_set_id: int = Field(foreign_key="proto_set.id")
-    proto_set: ProtoSet = Relationship(back_populates="set_representations")
     catalog_id: int = Field(foreign_key="catalog.id")
-    catalog: Catalog = Relationship(back_populates="set_representations")
     name: str
+    identifier: str
+    size: int
+    catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
+
+
+class SetRepresentation(SetRepresentationBase, TimestampModel, table=True):
+    proto_set: ProtoSet = Relationship(back_populates="set_representations")
+    catalog: Catalog = Relationship(back_populates="set_representations")
     localized_names: list["LocalizedSetName"] = Relationship(
         back_populates="set_representation"
     )
-    str_code: str
-    int_code: int | None
-    uuid_code: UUID | None
-    catalog_data: dict[str, Any]
     card_representations: list["CardRepresentation"] = Relationship(
         back_populates="set_representation"
     )
 
 
-class LocalizedSetName(TimestampModel, table=True):
+class SetRepresentationCreate(SetRepresentationBase):
+    pass
+
+
+class SetRepresentationPublic(SetRepresentationBase, PublicModel):
+    pass
+
+
+class SetRepresentationUpdate(SetRepresentationBase):
+    proto_set_id: int | None = None
+    catalog_id: int | None = None
+    name: str | None = None
+    identifier: str | None = None
+    size: int | None = None
+    catalog_data: dict[str, Any] | None = None
+
+
+# LOCALIZED SET NAME
+class LocalizedSetNameBase(SQLModel):
     set_representation_id: int = Field(foreign_key="set_representation.id")
-    set_representation: SetRepresentation = Relationship(
-        back_populates="localized_names"
-    )
     name: str
     locale: str
 
 
-class ProtoCard(TimestampModel, table=True):
+class LocalizedSetName(LocalizedSetNameBase, TimestampModel, table=True):
+    set_representation: SetRepresentation = Relationship(
+        back_populates="localized_names"
+    )
+
+
+class LocalizedSetNameCreate(LocalizedSetNameBase):
+    pass
+
+
+class LocalizedSetNamePublic(LocalizedSetNameBase, PublicModel):
+    pass
+
+
+class LocalizedSetNameUpdate(LocalizedSetNameBase):
+    set_representation_id: int | None = None
+    name: str | None = None
+    locale: str | None = None
+
+
+# PROTO CARD
+class ProtoCardBase(SQLModel):
     """
     A prototype card must not point to a prototype set, as the prototype set(s) of a card
     are determined by the set representations in the respective catalogs:
@@ -77,56 +167,89 @@ class ProtoCard(TimestampModel, table=True):
     """
 
     game_id: int = Field(foreign_key="game.id")
+    name: str
+
+
+class ProtoCard(ProtoCardBase, TimestampModel, table=True):
     game: Game = Relationship(back_populates="proto_cards")
     card_representations: list["CardRepresentation"] = Relationship(
         back_populates="proto_card"
     )
 
 
-class CardRepresentation(TimestampModel, table=True):
+class ProtoCardCreate(ProtoCardBase):
+    pass
+
+
+class ProtoCardPublic(ProtoCardBase, PublicModel):
+    pass
+
+
+class ProtoCardUpdate(ProtoCardBase):
+    game_id: int | None = None
+    name: str | None = None
+
+
+# CARD REPRESENTATION
+class CardRepresentationBase(SQLModel):
     game_id: int = Field(foreign_key="game.id")
-    game: Game = Relationship(back_populates="game")
     proto_card_id: int = Field(foreign_key="proto_card.id")
-    prototype: ProtoCard = Relationship(back_populates="representations")
     set_representation_id: int = Field(foreign_key="set_representation.id")
+    name: str
+    identifier: str
+    catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
+
+
+class CardRepresentation(CardRepresentationBase, TimestampModel, table=True):
+    game: Game = Relationship(back_populates="game")
+    prototype: ProtoCard = Relationship(back_populates="representations")
     set_representation: SetRepresentation = Relationship(
         back_populates="card_representations"
     )
-    name: str
     localized_names: list["LocalizedCardName"] = Relationship(
         back_populates="card_representation"
     )
-    str_code: str
-    int_code: int | None
-    uuid_code: UUID | None
-    catalog_data: dict[str, Any]
 
 
-class LocalizedCardName(TimestampModel, table=True):
+class CardRepresentationCreate(CardRepresentationBase):
+    pass
+
+
+class CardRepresentationPublic(CardRepresentationBase, PublicModel):
+    pass
+
+
+class CardRepresentationUpdate(CardRepresentationBase):
+    game_id: int | None = None
+    proto_card_id: int | None = None
+    set_representation_id: int | None = None
+    name: str | None = None
+    identifier: str | None = None
+    catalog_data: dict[str, Any] | None = None
+
+
+# LOCALIZED CARD NAME
+class LocalizedCardNameBase(SQLModel):
     card_representation_id: int = Field(foreign_key="card_representation.id")
-    card_representation: CardRepresentation = Relationship(
-        back_populates="localized_names"
-    )
     name: str
     locale: str
 
 
-class GameCreate(SQLModel):
-    name: str
-
-class GamePublic(SQLModel):
-    id: int
-    name: str
-    created_at: datetime.datetime
-    updated_at: datetime.datetime | None
+class LocalizedCardName(LocalizedCardNameBase, TimestampModel, table=True):
+    card_representation: CardRepresentation = Relationship(
+        back_populates="localized_names"
+    )
 
 
-class GameUpdate(SQLModel):
+class LocalizedCardNameCreate(LocalizedCardNameBase):
+    pass
+
+
+class LocalizedCardNamePublic(LocalizedCardNameBase, PublicModel):
+    pass
+
+
+class LocalizedCardNameUpdate(LocalizedCardNameBase):
+    card_representation_id: int | None = None
     name: str | None = None
-
-
-
-
-
-
-
+    locale: str | None = None
