@@ -19,6 +19,10 @@ class TimestampModel(SQLModel):
     )
 
 
+class PublicModel(TimestampModel):
+    id: int
+
+
 class Catalog(TimestampModel, table=True):
     name: str = Field(unique=True)
     set_representations: list["SetRepresentation"] = Relationship(
@@ -119,6 +123,7 @@ class GamePublic(SQLModel):
 
 class GameUpdate(SQLModel):
     name: str | None = None
+
 
 
 
