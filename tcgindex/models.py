@@ -3,6 +3,8 @@ from typing import Any
 from uuid import UUID
 from sqlalchemy import DateTime, func, text
 from sqlmodel import Column, Field, SQLModel, Relationship
+class GameBase(SQLModel):
+    name: str
 
 
 class TimestampModel(SQLModel):
@@ -24,12 +26,9 @@ class Catalog(TimestampModel, table=True):
     )
 
 
-class Game(TimestampModel, table=True):
-    name: str = Field(unique=True)
+class Game(TimestampModel, GameBase, table=True):
     proto_sets: list["ProtoSet"] = Relationship(back_populates="game")
     proto_cards: list["ProtoCard"] = Relationship(back_populates="game")
-
-
 class ProtoSet(TimestampModel, table=True):
     game_id: int = Field(foreign_key="game.id")
     game: Game = Relationship(back_populates="proto_sets")
@@ -106,3 +105,23 @@ class LocalizedCardName(TimestampModel, table=True):
     )
     name: str
     locale: str
+
+
+class GameCreate(SQLModel):
+    name: str
+
+class GamePublic(SQLModel):
+    id: int
+    name: str
+    created_at: datetime.datetime
+    updated_at: datetime.datetime | None
+
+
+class GameUpdate(SQLModel):
+    name: str | None = None
+
+
+
+
+
+
