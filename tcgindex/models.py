@@ -5,7 +5,18 @@ from sqlalchemy import DateTime, func, text
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
-class TimestampModel(SQLModel):
+class PublicModel(SQLModel):
+    id: int
+    created_at: datetime.datetime
+    updated_at: datetime.datetime | None
+
+
+# CATALOG
+class CatalogBase(SQLModel):
+    name: str = Field(unique=True)
+
+
+class Catalog(CatalogBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime.datetime = Field(
         sa_column_kwargs={
@@ -15,18 +26,6 @@ class TimestampModel(SQLModel):
     updated_at: datetime.datetime | None = Field(
         sa_column=Column(DateTime(), onupdate=func.now())
     )
-
-
-class PublicModel(TimestampModel):
-    id: int
-
-
-# CATALOG
-class CatalogBase(SQLModel):
-    name: str = Field(unique=True)
-
-
-class Catalog(CatalogBase, TimestampModel, table=True):
     set_representations: list["SetRepresentation"] = Relationship(
         back_populates="catalog"
     )
@@ -49,7 +48,16 @@ class GameBase(SQLModel):
     name: str
 
 
-class Game(GameBase, TimestampModel, table=True):
+class Game(GameBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     proto_sets: list["ProtoSet"] = Relationship(back_populates="game")
     proto_cards: list["ProtoCard"] = Relationship(back_populates="game")
 
@@ -72,7 +80,17 @@ class ProtoSetBase(SQLModel):
     name: str
 
 
-class ProtoSet(ProtoSetBase, TimestampModel, table=True):
+class ProtoSet(ProtoSetBase, table=True):
+    __tablename__ = "proto_set"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     game: Game = Relationship(back_populates="proto_sets")
     set_representations: list["SetRepresentation"] = Relationship(
         back_populates="proto_set"
@@ -99,10 +117,20 @@ class SetRepresentationBase(SQLModel):
     name: str
     identifier: str
     size: int
-    catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
+    # catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
 
 
-class SetRepresentation(SetRepresentationBase, TimestampModel, table=True):
+class SetRepresentation(SetRepresentationBase, table=True):
+    __tablename__ = "set_representation"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     proto_set: ProtoSet = Relationship(back_populates="set_representations")
     catalog: Catalog = Relationship(back_populates="set_representations")
     localized_names: list["LocalizedSetName"] = Relationship(
@@ -127,7 +155,7 @@ class SetRepresentationUpdate(SetRepresentationBase):
     name: str | None = None
     identifier: str | None = None
     size: int | None = None
-    catalog_data: dict[str, Any] | None = None
+    # catalog_data: dict[str, Any] | None = None
 
 
 # LOCALIZED SET NAME
@@ -137,7 +165,17 @@ class LocalizedSetNameBase(SQLModel):
     locale: str
 
 
-class LocalizedSetName(LocalizedSetNameBase, TimestampModel, table=True):
+class LocalizedSetName(LocalizedSetNameBase, table=True):
+    __tablename__ = "localized_set_name"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     set_representation: SetRepresentation = Relationship(
         back_populates="localized_names"
     )
@@ -170,7 +208,17 @@ class ProtoCardBase(SQLModel):
     name: str
 
 
-class ProtoCard(ProtoCardBase, TimestampModel, table=True):
+class ProtoCard(ProtoCardBase, table=True):
+    __tablename__ = "proto_card"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     game: Game = Relationship(back_populates="proto_cards")
     card_representations: list["CardRepresentation"] = Relationship(
         back_populates="proto_card"
@@ -197,10 +245,20 @@ class CardRepresentationBase(SQLModel):
     set_representation_id: int = Field(foreign_key="set_representation.id")
     name: str
     identifier: str
-    catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
+    # catalog_data: dict[str, Any] = Field(sa_column=Column(JSON))
 
 
-class CardRepresentation(CardRepresentationBase, TimestampModel, table=True):
+class CardRepresentation(CardRepresentationBase, table=True):
+    __tablename__ = "card_representation"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     game: Game = Relationship(back_populates="game")
     prototype: ProtoCard = Relationship(back_populates="representations")
     set_representation: SetRepresentation = Relationship(
@@ -225,7 +283,7 @@ class CardRepresentationUpdate(CardRepresentationBase):
     set_representation_id: int | None = None
     name: str | None = None
     identifier: str | None = None
-    catalog_data: dict[str, Any] | None = None
+    # catalog_data: dict[str, Any] | None = None
 
 
 # LOCALIZED CARD NAME
@@ -235,7 +293,17 @@ class LocalizedCardNameBase(SQLModel):
     locale: str
 
 
-class LocalizedCardName(LocalizedCardNameBase, TimestampModel, table=True):
+class LocalizedCardName(LocalizedCardNameBase, table=True):
+    __tablename__ = "localized_card_name"
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: datetime.datetime = Field(
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+        }
+    )
+    updated_at: datetime.datetime | None = Field(
+        sa_column=Column(DateTime(), onupdate=func.now())
+    )
     card_representation: CardRepresentation = Relationship(
         back_populates="localized_names"
     )
